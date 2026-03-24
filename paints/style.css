@@ -1,4 +1,4 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; caret-color: transparent; }
 
 :root {
   --bg:     #0c0c0c;
@@ -56,6 +56,7 @@ body {
   padding: 4px 8px;
   outline: none;
   transition: border-color 0.15s;
+  caret-color: #4af626;
 }
 
 .search-input:focus { border-color: var(--green); }
