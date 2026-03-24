@@ -32,10 +32,9 @@
 
   <div class="sort-bar" id="sortBar">
     <span class="sort-lbl">sort:</span>
-    <button class="sort-btn active" onclick="setSort('name', this)">name</button>
+    <button class="sort-btn active" onclick="setSort('time', this)">time</button>
+    <button class="sort-btn" onclick="setSort('name', this)">name</button>
     <button class="sort-btn" onclick="setSort('score', this)">score</button>
-    <button class="sort-btn" onclick="setSort('time', this)">time</button>
-    <button class="sort-btn" onclick="setSort('grade', this)">grade</button>
   </div>
 
   <div class="gallery" id="gallery"></div>
@@ -43,7 +42,7 @@
 </div>
 <script>
 let currentPaints = [];
-let currentSort = 'name';
+let currentSort = 'time';
 const PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
 
 function tnkToWebp(url) { return url ? url.replace(/\.tnk$/, '.webp') : ''; }
@@ -127,6 +126,7 @@ async function loadProfile() {
     document.getElementById('sortBar').style.display = '';
     statusEl.className = 'status ok';
     statusEl.textContent = 'loaded: ' + data.response.name;
+    history.pushState(null, '', '?user=' + encodeURIComponent(data.response.name));
   } catch(e) {
     statusEl.className = 'status err';
     statusEl.textContent = 'error: ' + e.message;
@@ -142,6 +142,14 @@ document.getElementById('heroSection').style.display = 'none';
 document.getElementById('statsRow').style.display = 'none';
 document.getElementById('sortBar').style.display = 'none';
 document.getElementById('gallery').innerHTML = '<div class="empty">search a user to view their paint collection</div>';
+
+// Auto-load from URL on page load
+const params = new URLSearchParams(window.location.search);
+const userFromUrl = params.get('user');
+if (userFromUrl) {
+  document.getElementById('userInput').value = userFromUrl;
+  loadProfile();
+}
 </script>
 </body>
 </html>
