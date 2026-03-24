@@ -11,7 +11,7 @@
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: monospace;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
   min-height: 100vh;
 }
@@ -184,8 +184,6 @@ body {
   font-size: 11px;
   text-transform: uppercase;
 }
-
-.paint-grade { color: var(--green); font-size: 11px; }
 
 .paint-stats {
   width: 100%;
