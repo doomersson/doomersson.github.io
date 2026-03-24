@@ -767,7 +767,7 @@ async function loadProfile() {
   status.innerHTML = '<div class="dot"></div> Fetching ' + user + '...';
 
   try {
-    const res = await fetch(`https://ratings.tankionline.com/api/eu/profile/?user=${encodeURIComponent(user)}&lang=en`);
+    const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=https://ratings.tankionline.com/api/eu/profile/?user=${encodeURIComponent(user)}&lang=en`);
     const data = await res.json();
     if (data.responseType !== 'OK') throw new Error('Bad response');
     renderProfile(data);
