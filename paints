@@ -432,12 +432,12 @@
     <div class="logo">Tanki<span>.</span>Paints</div>
     <div class="divider"></div>
     <div class="search-wrap">
-      <input class="search-input" id="userInput" type="text" placeholder="Username..." value="ufo2">
+      <input class="search-input" id="userInput" type="text" placeholder="Search username...">
       <button class="search-btn" onclick="loadProfile()">Search</button>
     </div>
     <div class="status" id="statusMsg">
-      <div class="dot" style="background:var(--accent2)"></div>
-      <span>Loaded — ufo2</span>
+      <div class="dot"></div>
+      <span>Enter a username to begin</span>
     </div>
   </div>
 
@@ -465,7 +465,7 @@
     </div>
   </div>
 
-  <div class="sort-bar">
+  <div class="sort-bar" id="sortBar">
     <span class="sort-lbl">Sort by</span>
     <button class="sort-btn active" onclick="setSort('name', this)">Name</button>
     <button class="sort-btn" onclick="setSort('score', this)">Score</button>
@@ -585,6 +585,9 @@ async function loadProfile() {
     currentPaints = data.response.paintsPlayed || [];
     renderStats(currentPaints, data.response.name);
     renderGallery();
+    document.getElementById('heroSection').style.display = '';
+    document.getElementById('statsRow').style.display = '';
+    document.getElementById('sortBar').style.display = '';
     statusEl.innerHTML = `<div class="dot" style="background:var(--accent2)"></div><span>Loaded — ${data.response.name}</span>`;
   } catch (e) {
     statusEl.innerHTML = `<div class="dot" style="background:#f44"></div><span>Error: ${e.message}</span>`;
@@ -596,11 +599,16 @@ document.getElementById('userInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') loadProfile();
 });
 
-// Boot with embedded data
-const embedded = {"response":{"paintsPlayed":[{"grade":-1,"id":920004704216,"imageUrl":"https://s.eu.tankionline.com/0/0/345/373/30665401773004/image.tnk","name":"Black","properties":null,"scoreEarned":0,"timePlayed":0},{"grade":-1,"id":920004703610,"imageUrl":"https://s.eu.tankionline.com/0/114/146/147/27006221410004/image.tnk","name":"Holiday","properties":null,"scoreEarned":0,"timePlayed":0}],"name":"ufo2"},"responseType":"OK"};
-currentPaints = embedded.response.paintsPlayed;
-renderStats(currentPaints, embedded.response.name);
-renderGallery();
+// Show landing state on boot
+document.getElementById('heroSection').style.display = 'none';
+document.getElementById('statsRow').style.display = 'none';
+document.getElementById('sortBar').style.display = 'none';
+document.getElementById('gallery').innerHTML = `
+  <div class="empty">
+    <span class="big">🎨</span>
+    Search a username to view their paint collection
+  </div>
+`;
 </script>
 </body>
 </html>
