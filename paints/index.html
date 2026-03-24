@@ -47,12 +47,6 @@ const PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
 
 function tnkToWebp(url) { return url ? url.replace(/\.tnk$/, '.webp') : ''; }
 
-function gradeStars(grade) {
-  if (grade < 0) return '★★★★★';
-  const f = Math.max(0, Math.min(5, grade));
-  return '★'.repeat(f) + '☆'.repeat(5 - f);
-}
-
 function formatMs(ms) {
   if (!ms) return '—';
   const m = Math.floor(ms / 60000), h = Math.floor(m / 60);
@@ -88,7 +82,6 @@ function renderGallery() {
       <span class="rank-num">#${i + 1}</span>
       <img class="paint-img" src="${tnkToWebp(p.imageUrl)}" alt="${p.name}" onerror="this.style.opacity=0.15">
       <div class="paint-name">${p.name}</div>
-      <div class="paint-grade">${gradeStars(p.grade)}</div>
       <div class="paint-stats">
         <div class="pstat"><span class="k">score</span><span class="v ${!p.scoreEarned ? 'zero' : ''}">${p.scoreEarned > 0 ? p.scoreEarned.toLocaleString() : '—'}</span></div>
         <div class="pstat"><span class="k">time</span><span class="v ${!p.timePlayed ? 'zero' : ''}">${p.timePlayed > 0 ? formatMs(p.timePlayed) : '—'}</span></div>
