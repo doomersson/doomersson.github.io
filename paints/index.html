@@ -35,6 +35,8 @@
     <button class="sort-btn active" onclick="setSort('time', this)">time</button>
     <button class="sort-btn" onclick="setSort('name', this)">name</button>
     <button class="sort-btn" onclick="setSort('score', this)">score</button>
+    <span class="sort-lbl" style="margin-left:16px">filter:</span>
+    <input class="paint-search" id="paintSearch" type="text" placeholder="search paint..." oninput="renderGallery()">
   </div>
 
   <div class="gallery" id="gallery"></div>
@@ -72,7 +74,8 @@ function getSorted(paints) {
 
 function renderGallery() {
   const gallery = document.getElementById('gallery');
-  const sorted = getSorted(currentPaints);
+  const query = (document.getElementById('paintSearch')?.value || '').toLowerCase();
+  const sorted = getSorted(currentPaints).filter(p => p.name.toLowerCase().includes(query));
   if (!sorted.length) {
     gallery.innerHTML = '<div class="empty">no paints found</div>';
     return;
