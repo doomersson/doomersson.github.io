@@ -145,8 +145,8 @@ body {
   border-bottom: 1px solid var(--dim);
   color: var(--fg);
   font-family: inherit;
-  font-size: 12px;
-  padding: 2px 8px;
+  font-size: 13px;
+  padding: 4px 8px;
   outline: none;
   width: 140px;
   transition: border-color 0.15s;
