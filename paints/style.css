@@ -1,4 +1,4 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; caret-color: transparent; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --bg:     #0c0c0c;
@@ -56,7 +56,6 @@ body {
   padding: 4px 8px;
   outline: none;
   transition: border-color 0.15s;
-  caret-color: #4af626;
 }
 
 .search-input:focus { border-color: var(--green); }
@@ -139,6 +138,21 @@ body {
 .sort-btn.active { color: var(--green); }
 .sort-btn.active::before { content: '['; }
 .sort-btn.active::after  { content: ']'; }
+
+.paint-search {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--dim);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 2px 8px;
+  outline: none;
+  width: 140px;
+  transition: border-color 0.15s;
+}
+
+.paint-search:focus { border-color: var(--green); }
 
 /* GALLERY */
 .gallery {
