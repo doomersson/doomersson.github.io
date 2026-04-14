@@ -153,11 +153,11 @@
          .summary-item.full-width { flex-basis: 100%; background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); align-items: center; justify-content: center; padding: 20px; border: none; border-radius: var(--radius-large); }
          .summary-item.full-width .summary-label { color: var(--md-sys-color-on-primary-container); font-size: 11px; opacity: 0.85; margin-bottom: 4px; }
          .summary-item.full-width .summary-value { font-size: 24px; color: var(--md-sys-color-on-primary-container); font-weight: 700; letter-spacing: -0.5px; }
-         /* Crystal/Exp summary card */
+         /* Crystal/Exp ratio card */
          .summary-item.highlight-card { flex-basis: 100%; background: linear-gradient(135deg, var(--md-sys-color-primary-container) 0%, var(--md-sys-color-secondary-container) 100%); border: 1px solid var(--md-sys-color-primary); border-radius: var(--radius-large); padding: 16px 20px; display: flex; flex-direction: row; gap: 24px; flex-wrap: wrap; }
          .summary-item.highlight-card .highlight-stat { display: flex; flex-direction: column; }
          .summary-item.highlight-card .summary-label { color: var(--md-sys-color-on-primary-container); font-size: 10px; opacity: 0.85; margin-bottom: 4px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-         .summary-item.highlight-card .summary-value { font-size: 18px; font-weight: 700; color: var(--md-sys-color-on-primary-container); font-variant-numeric: tabular-nums; }
+         .summary-item.highlight-card .summary-value { font-size: 28px; font-weight: 700; color: var(--md-sys-color-on-primary-container); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
          .summary-label { font-size: 10px; color: var(--md-sys-color-secondary); margin-bottom: 4px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
          .summary-value { font-size: 13px; font-weight: 600; color: var(--md-sys-color-on-surface); line-height: 1.2; white-space: nowrap; }
          .summary-value.premium { color: var(--md-sys-color-primary); text-shadow: 0 0 12px rgba(118,255,51,.4); }
@@ -599,7 +599,7 @@
                      if (category.key === "stars_previous") {
                         html += `<table class="leaderboard-table" style="min-width: 100%;"><thead><tr><th style="width:10%;">#</th><th style="width:35%;">Name</th><th style="width:35%;">Reward</th><th style="width:20%;">Stars</th></tr></thead><tbody>${categoryData.map((p, idx) => `<tr><td>${idx + 1}</td><td><a href="#" class="player-link" data-username="${p.uid}">${p.uid}</a></td><td><div class="prize-icons-container">${(p.prizes || []).map(pz => `<div class="prize-icon ${pz.replace(/_/g, "-")}" title="${pz}"></div>`).join("")}</div></td><td>${p.value.toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
                      } else {
-                        html += `<table class="leaderboard-table"><thead><tr><th>#</th><th>Name</th><th>Value</th></tr></thead><tbody>${categoryData.map((p, idx) => `<tr><td>${idx + 1}</td><td><a href="#" class="player-link" data-username="${p.uid}">${p.uid}</a></td><td>${category.key === "efficiency" ? (p.value / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 }) : p.value.toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
+                        html += `<table class="leaderboard-table"><thead><tr><th>#</th><th>Name</th><th>Value</th></tr></thead><tbody>${categoryData.map((p, idx) => `<tr><td>${idx + 1}</td><td><a href="#" class="player-link" data-username="${p.uid}">${p.uid}</a></td><td>${category.key === "efficiency" ? (p.value / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : p.value.toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
                      }
                      html += "</div>";
                   } else html += `<div class="no-data-message">No Data</div>`;
@@ -771,23 +771,28 @@
             const ts = (profile.suppliesUsage || []).reduce((t, sp) => t + (sp.usages || 0), 0);
             const rankN = profile.rank || 1;
 
-            // Crystal & Exp precise values (3 decimals shown when monitoring)
-            const crystalsVal = (profile.earnedCrystals ?? 0).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-            const expVal = (profile.score ?? 0).toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
-            const crystalsOld = oldProfile ? (oldProfile.earnedCrystals ?? 0) : null;
-            const expOld = oldProfile ? (oldProfile.score ?? 0) : null;
-            const crystalsDiff = crystalsOld !== null ? createChangeSpan((profile.earnedCrystals ?? 0) - crystalsOld) : "";
-            const expDiff = expOld !== null ? createChangeSpan((profile.score ?? 0) - expOld) : "";
+            // --- Crystal / Experience ratio ---
+            const crystals = profile.earnedCrystals ?? 0;
+            const exp = profile.score ?? 0;
+            const ratio = exp > 0 ? crystals / exp : 0;
+            const ratioStr = ratio.toFixed(3);
+
+            const oldCrystals = oldProfile ? (oldProfile.earnedCrystals ?? 0) : null;
+            const oldExp = oldProfile ? (oldProfile.score ?? 0) : null;
+            const oldRatio = (oldExp !== null && oldExp > 0) ? oldCrystals / oldExp : null;
+
+            // Log ratio change during monitoring (threshold 0.0005 avoids noise)
+            if (oldRatio !== null && Math.abs(ratio - oldRatio) >= 0.0005) {
+               logChange("Crystal/Experience Ratio", oldRatio, ratio);
+            }
+
+            const ratioDiff = oldRatio !== null ? createChangeSpan(ratio - oldRatio) : "";
 
             const highlightCard = `
                <div class="summary-item highlight-card">
                   <div class="highlight-stat">
-                     <span class="summary-label">Crystals (precise)</span>
-                     <span class="summary-value">${crystalsVal}${crystalsDiff}</span>
-                  </div>
-                  <div class="highlight-stat">
-                     <span class="summary-label">Experience (precise)</span>
-                     <span class="summary-value">${expVal}${expDiff}</span>
+                     <span class="summary-label">Crystal / Experience Ratio</span>
+                     <span class="summary-value">${ratioStr}${ratioDiff}</span>
                   </div>
                </div>`;
 
@@ -824,7 +829,12 @@
                   if (cur.position > 0 && old.position > 0 && cur.position !== old.position) { pHTML = createChangeSpan(old.position - cur.position); logChange(`${c.n} Rank`, old.position, cur.position); }
                   if (cv !== ov) { vHTML = createChangeSpan(cv - ov); logChange(`${c.n} Value`, ov, cv); }
                }
-               const fmt = v => v == -1 || v == null ? "-" : v.toLocaleString(undefined, { maximumFractionDigits: c.k === "efficiency" ? 3 : 0 });
+               // Efficiency: always 2 decimal places; others: no decimals
+               const fmt = v => {
+                  if (v == -1 || v == null) return "-";
+                  if (c.k === "efficiency") return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+               };
                return `<tr><td>${c.n}</td><td>${fmt(cur.position)}${pHTML}</td><td>${fmt(cv)}${vHTML}</td><td>${fmt(prv.position)}</td><td>${fmt(c.k === "efficiency" && prv.value > 0 ? prv.value / 1000 : prv.value)}</td></tr>`;
             }).join("");
             elements.rankingsTableContainer.innerHTML = `<h3 class="list-title" style="text-align:center;margin-bottom:12px;border:none;padding:0;">Weekly Ratings</h3><table cellpadding="0" cellspacing="0"><thead><tr><th>Category</th><th>Rank</th><th>Value</th><th>Prev Rank</th><th>Prev Value</th></tr></thead><tbody>${rows}</tbody></table>`;
