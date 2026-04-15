@@ -599,7 +599,7 @@
                      if (category.key === "stars_previous") {
                         html += `<table class="leaderboard-table" style="min-width: 100%;"><thead><tr><th style="width:10%;">#</th><th style="width:35%;">Name</th><th style="width:35%;">Reward</th><th style="width:20%;">Stars</th></tr></thead><tbody>${categoryData.map((p, idx) => `<tr><td>${idx + 1}</td><td><a href="#" class="player-link" data-username="${p.uid}">${p.uid}</a></td><td><div class="prize-icons-container">${(p.prizes || []).map(pz => `<div class="prize-icon ${pz.replace(/_/g, "-")}" title="${pz}"></div>`).join("")}</div></td><td>${p.value.toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
                      } else {
-                        html += `<table class="leaderboard-table"><thead><tr><th>#</th><th>Name</th><th>Value</th></tr></thead><tbody>${categoryData.map((p, idx) => `<tr><td>${idx + 1}</td><td><a href="#" class="player-link" data-username="${p.uid}">${p.uid}</a></td><td>${category.key === "efficiency" ? (p.value / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : p.value.toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
+                        html += `<table class="leaderboard-table"><thead><tr><th>#</th><th>Name</th><th>Value</th></tr></thead><tbody>${categoryData.map((p, idx) => `<tr><td>${idx + 1}</td><td><a href="#" class="player-link" data-username="${p.uid}">${p.uid}</a></td><td>${category.key === "efficiency" ? (p.value / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : p.value.toLocaleString()}</td></tr>`).join("")}</tbody></table>`;
                      }
                      html += "</div>";
                   } else html += `<div class="no-data-message">No Data</div>`;
@@ -822,8 +822,8 @@
                { k: "efficiency", n: "Efficiency" },
             ].map(c => {
                const cur = currentRating[c.k] || {}, prv = prevRating[c.k] || {}, old = oldRating?.[c.k],
-                  cv = c.k === "efficiency" && cur.value > 0 ? cur.value / 1000 : cur.value,
-                  ov = c.k === "efficiency" && old?.value > 0 ? old.value / 1000 : old?.value;
+                  cv = c.k === "efficiency" && cur.value > 0 ? cur.value / 100 : cur.value,
+                  ov = c.k === "efficiency" && old?.value > 0 ? old.value / 100 : old?.value;
                let pHTML = "", vHTML = "";
                if (old) {
                   if (cur.position > 0 && old.position > 0 && cur.position !== old.position) { pHTML = createChangeSpan(old.position - cur.position); logChange(`${c.n} Rank`, old.position, cur.position); }
@@ -835,7 +835,7 @@
                   if (c.k === "efficiency") return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                   return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
                };
-               return `<tr><td>${c.n}</td><td>${fmt(cur.position)}${pHTML}</td><td>${fmt(cv)}${vHTML}</td><td>${fmt(prv.position)}</td><td>${fmt(c.k === "efficiency" && prv.value > 0 ? prv.value / 1000 : prv.value)}</td></tr>`;
+               return `<tr><td>${c.n}</td><td>${fmt(cur.position)}${pHTML}</td><td>${fmt(cv)}${vHTML}</td><td>${fmt(prv.position)}</td><td>${fmt(c.k === "efficiency" && prv.value > 0 ? prv.value / 100 : prv.value)}</td></tr>`;
             }).join("");
             elements.rankingsTableContainer.innerHTML = `<h3 class="list-title" style="text-align:center;margin-bottom:12px;border:none;padding:0;">Weekly Ratings</h3><table cellpadding="0" cellspacing="0"><thead><tr><th>Category</th><th>Rank</th><th>Value</th><th>Prev Rank</th><th>Prev Value</th></tr></thead><tbody>${rows}</tbody></table>`;
          }
