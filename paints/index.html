@@ -45,7 +45,7 @@
 <script>
 let currentPaints = [];
 let currentSort = 'time';
-const PROXY = 'https://api.codetabs.com/v1/proxy?quest=';
+const PROXY = 'https://api.allorigins.win/get?url=';
 
 function tnkToWebp(url) { return url ? url.replace(/\.tnk$/, '.webp') : ''; }
 
@@ -67,7 +67,6 @@ function getSorted(paints) {
     if (currentSort === 'name')  return a.name.localeCompare(b.name);
     if (currentSort === 'score') return b.scoreEarned - a.scoreEarned;
     if (currentSort === 'time')  return b.timePlayed - a.timePlayed;
-    if (currentSort === 'grade') return b.grade - a.grade;
     return 0;
   });
 }
@@ -111,8 +110,10 @@ async function loadProfile() {
   statusEl.className = 'status';
   statusEl.textContent = 'fetching ' + user + '...';
   try {
-    const res = await fetch(PROXY + `https://ratings.tankionline.com/api/eu/profile/?user=${encodeURIComponent(user)}&lang=en`);
-    const data = await res.json();
+    const apiUrl = `https://ratings.tankionline.com/api/eu/profile/?user=${encodeURIComponent(user)}&lang=en`;
+    const res = await fetch(PROXY + encodeURIComponent(apiUrl));
+    const wrapper = await res.json();
+    const data = JSON.parse(wrapper.contents);
     if (data.responseType !== 'OK') throw new Error('user not found');
     currentPaints = data.response.paintsPlayed || [];
     renderStats(currentPaints, data.response.name);
