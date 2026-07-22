@@ -41,11 +41,10 @@
 
   <div class="gallery" id="gallery"></div>
 
-</div>
-<script>
+</div><script>
 let currentPaints = [];
 let currentSort = 'time';
-const PROXY = 'https://api.allorigins.win/get?url=';
+const PROXY = 'https://corsproxy.io/?';
 
 function tnkToWebp(url) { return url ? url.replace(/\.tnk$/, '.webp') : ''; }
 
@@ -106,25 +105,39 @@ function renderStats(paints, name) {
 async function loadProfile() {
   const user = document.getElementById('userInput').value.trim();
   if (!user) return;
+
   const statusEl = document.getElementById('statusMsg');
   statusEl.className = 'status';
   statusEl.textContent = 'fetching ' + user + '...';
+
   try {
     const apiUrl = `https://ratings.tankionline.com/api/eu/profile/?user=${encodeURIComponent(user)}&lang=en`;
     const res = await fetch(PROXY + encodeURIComponent(apiUrl));
-    const wrapper = await res.json();
-    const data = JSON.parse(wrapper.contents);
-    if (data.responseType !== 'OK') throw new Error('user not found');
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    if (data.responseType !== 'OK') {
+      throw new Error('user not found');
+    }
+
     currentPaints = data.response.paintsPlayed || [];
+
     renderStats(currentPaints, data.response.name);
     renderGallery();
+
     document.getElementById('heroSection').style.display = '';
     document.getElementById('statsRow').style.display = '';
     document.getElementById('sortBar').style.display = '';
+
     statusEl.className = 'status ok';
     statusEl.textContent = 'loaded: ' + data.response.name;
+
     history.pushState(null, '', '?user=' + encodeURIComponent(data.response.name));
-  } catch(e) {
+  } catch (e) {
     statusEl.className = 'status err';
     statusEl.textContent = 'error: ' + e.message;
   }
