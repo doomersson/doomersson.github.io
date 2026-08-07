@@ -434,11 +434,29 @@
             monitorInterval: 3000,
          };
 
-         // CORS proxy — corsproxy.io stopped working, and corsfix.com's free tier
-         // requires domain whitelisting (403s from an unregistered origin like this one).
-         // AllOrigins has no domain whitelist requirement, so it works from anywhere.
-         function corsProxy(targetUrl) {
-            return `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+         // CORS proxy — free public proxies (corsproxy.io, corsfix, allorigins) are all
+         // shared, rate-limited services that go down or block origins unpredictably.
+         // To stay resilient, try each of these in order and fall through on failure.
+         // For a production site, hosting your own proxy (e.g. a free Cloudflare Worker)
+         // is the reliable long-term fix — ask if you'd like one written for you.
+         const CORS_PROXIES = [
+            targetUrl => `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+            targetUrl => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+            targetUrl => `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+         ];
+
+         async function fetchViaProxy(targetUrl) {
+            let lastError;
+            for (const buildProxyUrl of CORS_PROXIES) {
+               try {
+                  const response = await fetch(buildProxyUrl(targetUrl));
+                  if (!response.ok) throw new Error(`Status ${response.status}`);
+                  return response;
+               } catch (e) {
+                  lastError = e;
+               }
+            }
+            throw lastError || new Error("All CORS proxies failed");
          }
 
          const RANKS = ["Recruit","Private","Gefreiter","Corporal","Master Corporal","Sergeant","Staff Sergeant","Master Sergeant","First Sergeant","Sergeant-Major","Warrant Officer 1","Warrant Officer 2","Warrant Officer 3","Warrant Officer 4","Warrant Officer 5","Third Lieutenant","Second Lieutenant","First Lieutenant","Captain","Major","Lieutenant Colonel","Colonel","Brigadier","Major General","Lieutenant General","General","Marshal","Field Marshal","Commander","Generalissimo","Legend"];
@@ -537,10 +555,9 @@
          }
 
          async function fetchStarsLeaderboardData() {
-            const apiUrl = corsProxy("https://pages.tankionline.com/challenge-accepted");
+            const targetUrl = "https://pages.tankionline.com/challenge-accepted";
             try {
-               const response = await fetch(apiUrl);
-               if (!response.ok) throw new Error("Status " + response.status);
+               const response = await fetchViaProxy(targetUrl);
                const htmlText = await response.text();
                const doc = new DOMParser().parseFromString(htmlText, "text/html");
                const parseList = (selector, prizeParser) => {
@@ -569,7 +586,7 @@
             container.innerHTML = `<div class="loader" style="display: flex;"><div class="loader-inner"></div></div>`;
             try {
                const [regularDataResponse, starsData] = await Promise.all([
-                  fetch(corsProxy(API_CONFIG.leaderboardUrl)).then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }),
+                  fetchViaProxy(API_CONFIG.leaderboardUrl).then(res => res.json()),
                   fetchStarsLeaderboardData(),
                ]);
                if (regularDataResponse?.response) {
@@ -649,7 +666,7 @@
 
          async function fetchProfileData(server, username) {
             const targetUrl = `${API_CONFIG.baseUrls[server]}?user=${encodeURIComponent(username)}&lang=en&_=${Date.now()}`;
-            const response = await fetch(corsProxy(targetUrl));
+            const response = await fetchViaProxy(targetUrl);
             if (!response.ok) throw new Error(response.status);
             const data = await response.json();
             if (data?.responseType === "NOT_FOUND") throw new Error("Player not found. Check the nickname or if the profile is hidden.");
