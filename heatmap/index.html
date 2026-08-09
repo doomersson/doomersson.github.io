@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d18">
+  <meta name="description" content="Create private, browser-based route replays from Tanki route JSON files.">
+  <title>Tanki Route Studio</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand-block">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <p class="eyebrow">ROUTE VISUALIZER</p>
+        <h1>Tanki Route Studio</h1>
+      </div>
+    </div>
+    <div class="privacy-pill">
+      <span class="privacy-dot" aria-hidden="true"></span>
+      Runs locally in your browser
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="control-panel" aria-label="Route controls">
+      <section class="panel-section upload-section">
+        <div class="section-heading">
+          <span class="step">01</span>
+          <div>
+            <h2>Route data</h2>
+            <p>Upload a Tanki route JSON or TXT export.</p>
+          </div>
+        </div>
+        <label class="drop-zone" id="routeDropZone" for="routeFile">
+          <input id="routeFile" type="file" accept=".json,.txt,application/json,text/plain">
+          <span class="drop-icon" aria-hidden="true">↥</span>
+          <span class="drop-title">Choose route file</span>
+          <span class="drop-help">or drag and drop it here</span>
+        </label>
+        <p class="file-name" id="routeFileName">No route loaded</p>
+      </section>
+
+      <section class="panel-section" id="backgroundSection">
+        <div class="section-heading">
+          <span class="step">02</span>
+          <div>
+            <h2>Background</h2>
+            <p>Optional map image shown behind the routes.</p>
+          </div>
+        </div>
+        <label class="file-button" for="backgroundFile">
+          <input id="backgroundFile" type="file" accept="image/*">
+          <span>Upload image</span>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>Fit</span>
+            <select id="backgroundFit">
+              <option value="cover">Cover</option>
+              <option value="contain">Contain</option>
+              <option value="stretch">Stretch</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Opacity <output id="backgroundOpacityValue">100%</output></span>
+            <input id="backgroundOpacity" type="range" min="0" max="100" value="100" step="1">
+          </label>
+        </div>
+        <div class="inline-actions">
+          <p class="file-name" id="backgroundFileName">Default background</p>
+          <button class="text-button" id="removeBackground" type="button" disabled>Remove</button>
+        </div>
+      </section>
+
+      <section class="panel-section players-section" id="playersSection">
+        <div class="section-heading compact-heading">
+          <span class="step">03</span>
+          <div>
+            <h2>Players</h2>
+            <p id="selectionCount">Upload route data first</p>
+          </div>
+        </div>
+        <div class="segmented-actions" role="group" aria-label="Player selection shortcuts">
+          <button id="selectAll" type="button" disabled>All</button>
+          <button id="selectNone" type="button" disabled>None</button>
+        </div>
+        <div class="player-list empty" id="playerList">
+          <p>Players will appear here.</p>
+        </div>
+      </section>
+
+      <section class="panel-section export-section">
+        <div class="section-heading compact-heading">
+          <span class="step">04</span>
+          <div>
+            <h2>Export</h2>
+            <p>Save the current frame or the full replay.</p>
+          </div>
+        </div>
+        <div class="export-grid">
+          <button class="secondary-button" id="exportPng" type="button" disabled>PNG</button>
+          <button class="secondary-button" id="exportTransparentPng" type="button" disabled>Transparent PNG</button>
+        </div>
+        <div class="video-settings">
+          <label class="field">
+            <span>Timelapse speed</span>
+            <div class="unit-input">
+              <input id="exportSpeed" type="number" value="8" min="0.25" max="64" step="0.25">
+              <span>×</span>
+            </div>
+          </label>
+          <p class="estimate" id="exportEstimate">Upload route data to calculate length</p>
+        </div>
+        <button class="primary-button" id="exportVideo" type="button" disabled>Export timelapse</button>
+        <div class="export-progress" id="exportProgress" hidden>
+          <div class="progress-copy">
+            <span id="exportProgressText">Rendering…</span>
+            <button class="text-button" id="cancelExport" type="button">Cancel</button>
+          </div>
+          <progress id="exportProgressBar" max="100" value="0">0%</progress>
+          <p>Keep this tab open until the download begins.</p>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage-column" aria-label="Route replay">
+      <div class="dataset-bar" id="datasetBar">
+        <div>
+          <span class="dataset-label">DATASET</span>
+          <strong id="datasetName">Waiting for route data</strong>
+        </div>
+        <div class="dataset-stats" aria-live="polite">
+          <span><strong id="sampleCount">—</strong> samples</span>
+          <span><strong id="playerCount">—</strong> players</span>
+          <span><strong id="durationStat">—</strong> duration</span>
+        </div>
+      </div>
+
+      <div class="canvas-frame" id="canvasFrame">
+        <canvas id="routeCanvas" width="1080" height="1080" aria-label="Top-down Tanki player route replay"></canvas>
+        <div class="empty-state" id="emptyState">
+          <span class="empty-icon" aria-hidden="true">↥</span>
+          <h2>Drop in a route file</h2>
+          <p>Your animation will appear here. Nothing is uploaded to a server.</p>
+        </div>
+      </div>
+
+      <div class="playback-bar">
+        <button class="play-button" id="playPause" type="button" disabled aria-label="Play route replay">
+          <span id="playIcon" aria-hidden="true">▶</span>
+        </button>
+        <div class="timeline-group">
+          <input id="timeline" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Replay position">
+          <div class="timeline-meta">
+            <span id="playbackClock">00:00 / 00:00</span>
+            <span id="activeCount">0 active</span>
+          </div>
+        </div>
+        <label class="playback-speed">
+          <span>Preview</span>
+          <select id="previewSpeed" disabled>
+            <option value="0.5">0.5×</option>
+            <option value="1">1×</option>
+            <option value="2">2×</option>
+            <option value="4" selected>4×</option>
+            <option value="8">8×</option>
+            <option value="16">16×</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="status-line" id="statusLine" role="status" aria-live="polite">Ready for a route file.</p>
+    </section>
+  </main>
+
+  <canvas id="exportCanvas" width="1080" height="1080" hidden></canvas>
+</body>
+</html>
