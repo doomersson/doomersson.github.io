@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tanki Stats — Compact Ratings</title>
+<meta name="description" content="Compact, detailed Tanki Online player stats sourced from the official ratings API.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#001926;
+    --bg-raise:#0b2233;
+    --card:#0d2130;
+    --card-border:#1d3849;
+    --grid-line:#0f2a3b;
+    --ink:#e9f3fa;
+    --sub:#7fa0b3;
+    --muted:#4f7186;
+    --green:#76FF33;
+    --cyan:#00D4FF;
+    --lavender:#BFD5FF;
+    --tangerine:#FFCC00;
+    --discount:#FFEE00;
+    --purple:#D580FF;
+    --redteam:#FF6666;
+    --jacket:#FF3333;
+    --energy:#FF8000;
+    --repair:#BFE500;
+    --shield:#E5D68A;
+    --dmg:#FF4040;
+    --speed:#FFFF00;
+    --mine:#36B24A;
+    --goldbox:#FFBD00;
+    --drone:#33DDFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(118,255,51,.06), transparent 60%),
+      repeating-linear-gradient(45deg, var(--grid-line) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(-45deg, var(--grid-line) 0 1px, transparent 1px 42px),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Rubik',sans-serif;
+    min-height:100vh;
+  }
+
+  /* watermark wordmark pattern, tucked behind hero */
+  .wm{
+    position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none;
+    opacity:.035;
+  }
+  .wm-row{
+    white-space:nowrap; font-weight:900; font-size:64px; letter-spacing:2px;
+    transform:rotate(-12deg); margin:28px -200px;
+  }
+
+  .wrap{position:relative; z-index:1; max-width:1040px; margin:0 auto; padding:28px 20px 60px;}
+
+  header.top{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px;}
+  .logo{display:flex; flex-direction:column; line-height:.95;}
+  .logo b{font-weight:900; font-size:26px; letter-spacing:.5px;}
+  .logo b.on{color:var(--green);}
+  .logo span{font-size:10px; letter-spacing:3px; color:var(--sub); text-transform:uppercase; margin-top:4px;}
+
+  form.search{display:flex; gap:8px; flex:1; min-width:260px; max-width:480px;}
+  form.search input[type=text]{
+    flex:1; background:var(--card); border:1px solid var(--card-border); color:var(--ink);
+    border-radius:8px; padding:10px 12px; font-family:inherit; font-size:14px; outline:none;
+  }
+  form.search input[type=text]:focus{border-color:var(--green);}
+  form.search select{
+    background:var(--card); border:1px solid var(--card-border); color:var(--sub);
+    border-radius:8px; padding:10px 8px; font-family:inherit; font-size:12px;
+  }
+  form.search button{
+    background:var(--green); border:none; color:#001926; font-weight:700; font-size:13px;
+    border-radius:8px; padding:10px 16px; cursor:pointer; letter-spacing:.3px;
+  }
+  form.search button:hover{filter:brightness(1.08);}
+
+  #status{color:var(--sub); font-size:13px; margin:10px 2px 2px;}
+  #status.err{color:var(--jacket);}
+
+  #app{display:none;}
+  #app.show{display:block;}
+
+  .profile-card{
+    background:var(--card); border:1px solid var(--card-border); border-radius:12px;
+    padding:16px 18px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .profile-card .name-block{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+  .profile-card .pname{font-size:22px; font-weight:900; color:var(--green); letter-spacing:.3px;}
+  .badge{font-size:10px; text-transform:uppercase; letter-spacing:.6px; padding:3px 8px; border-radius:20px; font-weight:700;}
+  .badge.rank{background:rgba(191,213,255,.12); color:var(--lavender); border:1px solid rgba(191,213,255,.25);}
+  .badge.prem{background:linear-gradient(90deg, rgba(255,38,74,.35), rgba(255,38,74,0)); color:#ffb3c0; border:1px solid rgba(255,38,74,.4);}
+  .badge.region{background:rgba(0,212,255,.1); color:var(--cyan); border:1px solid rgba(0,212,255,.25);}
+
+  .xp-block{flex:1; min-width:220px;}
+  .xp-row{display:flex; justify-content:space-between; font-size:11px; color:var(--sub); margin-bottom:5px;}
+  .xp-row b{color:var(--ink); font-weight:600;}
+  .xp-bar{height:7px; border-radius:4px; background:var(--bg-raise); overflow:hidden; border:1px solid var(--card-border);}
+  .xp-fill{height:100%; background:linear-gradient(90deg, var(--tangerine), var(--green));}
+
+  .section-label{
+    font-size:10px; text-transform:uppercase; letter-spacing:2px; color:var(--muted);
+    margin:22px 2px 8px; font-weight:700;
+  }
+
+  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  @media (max-width:720px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
+
+  .stat{
+    background:var(--card); border:1px solid var(--card-border); border-top:3px solid var(--accent, var(--green));
+    border-radius:10px; padding:10px 12px;
+  }
+  .stat .l{font-size:9px; text-transform:uppercase; letter-spacing:1.2px; color:var(--sub); font-weight:700;}
+  .stat .v{font-size:19px; font-weight:900; margin-top:3px; color:var(--accent, var(--ink));}
+  .stat .v small{font-size:11px; font-weight:600; color:var(--sub); margin-left:3px;}
+
+  .gallery{display:grid; grid-template-columns:repeat(auto-fill, minmax(74px,1fr)); gap:8px;}
+  .gitem{
+    background:var(--card); border:1px solid var(--card-border); border-radius:8px; padding:6px;
+    text-align:center; font-size:9px; color:var(--sub);
+  }
+  .gitem img{width:100%; aspect-ratio:1; object-fit:contain; border-radius:6px; background:var(--bg-raise); display:block; margin-bottom:4px;}
+  .gitem .n{color:var(--ink); font-weight:600; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .gitem .g{color:var(--muted);}
+
+  .loadout{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media (max-width:560px){ .loadout{grid-template-columns:1fr;} }
+  .load-card{background:var(--card); border:1px solid var(--card-border); border-radius:10px; padding:12px; display:flex; gap:12px; align-items:center;}
+  .load-card img{width:56px; height:56px; object-fit:contain; background:var(--bg-raise); border-radius:8px; flex:none;}
+  .load-card .meta .l{font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); font-weight:700;}
+  .load-card .meta .n{font-size:15px; font-weight:700; margin:2px 0;}
+  .load-card .meta .s{font-size:11px; color:var(--sub);}
+
+  .modes{display:flex; flex-direction:column; gap:6px;}
+  .mode-row{display:grid; grid-template-columns:110px 1fr 60px; align-items:center; gap:10px; font-size:11px;}
+  .mode-row .m-bar-wrap{height:6px; background:var(--bg-raise); border-radius:4px; overflow:hidden; border:1px solid var(--card-border);}
+  .mode-row .m-bar{height:100%; background:var(--cyan);}
+  .mode-row .m-name{color:var(--sub);}
+  .mode-row .m-pct{text-align:right; color:var(--muted);}
+
+  .resist-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .resist{
+    display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--card-border);
+    border-radius:20px; padding:4px 10px 4px 4px; font-size:10px; color:var(--sub);
+  }
+  .resist img{width:22px; height:22px; object-fit:contain; border-radius:50%; background:var(--bg-raise);}
+
+  footer{margin-top:36px; text-align:center; font-size:11px; color:var(--muted);}
+  footer a{color:var(--sub);}
+</style>
+</head>
+<body>
+
+<div class="wm" aria-hidden="true">
+  <div id="wmRows"></div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo">
+      <b>TANKI<span class="on">·</span>STATS</b>
+      <span>Compact ratings dashboard</span>
+    </div>
+    <form class="search" id="searchForm">
+      <input type="text" id="userInput" placeholder="Player nickname…" autocomplete="off">
+      <select id="regionInput">
+        <option value="eu">EU</option>
+        <option value="ru">RU</option>
+      </select>
+      <button type="submit">Look up</button>
+    </form>
+  </header>
+
+  <div id="status"></div>
+
+  <div id="app">
+    <div class="profile-card">
+      <div class="name-block">
+        <span class="pname" id="pName">—</span>
+        <span class="badge rank" id="pRank">Rank —</span>
+        <span class="badge region" id="pRegion">EU</span>
+        <span class="badge prem" id="pPrem" style="display:none;">Premium</span>
+      </div>
+      <div class="xp-block">
+        <div class="xp-row"><span><b id="xpNow">0</b> XP</span><span id="xpNext">next 0</span></div>
+        <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="section-label">Combat</div>
+    <div class="stat-grid">
+      <div class="stat" style="--accent:var(--jacket)"><div class="l">Kills</div><div class="v" id="sKills">—</div></div>
+      <div class="stat" style="--accent:var(--redteam)"><div class="l">Deaths</div><div class="v" id="sDeaths">—</div></div>
+      <div class="stat" style="--accent:var(--green)"><div class="l">K / D</div><div class="v" id="sKD">—</div></div>
+      <div class="stat" style="--accent:var(--lavender)"><div class="l">Gear Score</div><div class="v" id="sGear">—</div></div>
+      <div class="stat" style="--accent:var(--cyan)"><div class="l">Efficiency</div><div class="v" id="sEff">—</div></div>
+      <div class="stat" style="--accent:var(--goldbox)"><div class="l">Golds Caught</div><div class="v" id="sGolds">—</div></div>
+      <div class="stat" style="--accent:var(--cyan)"><div class="l">Crystals</div><div class="v" id="sCrystals">—</div></div>
+      <div class="stat" style="--accent:var(--drone)"><div class="l">C / E ratio</div><div class="v" id="sCE">—</div></div>
+    </div>
+
+    <div class="section-label">Time & Usage</div>
+    <div class="stat-grid">
+      <div class="stat" style="--accent:var(--energy)"><div class="l">Hours Played</div><div class="v" id="sHours">—</div></div>
+      <div class="stat" style="--accent:var(--repair)"><div class="l">Supplies Used</div><div class="v" id="sSupplies">—</div></div>
+      <div class="stat" style="--accent:var(--purple)"><div class="l">Paints Owned</div><div class="v" id="sPaints">—</div></div>
+      <div class="stat" style="--accent:var(--discount)"><div class="l">Gifts Received</div><div class="v" id="sGifts">—</div></div>
+      <div class="stat" style="--accent:var(--lavender)"><div class="l">Hulls Tried</div><div class="v" id="sHulls">—</div></div>
+      <div class="stat" style="--accent:var(--lavender)"><div class="l">Turrets Tried</div><div class="v" id="sTurrets">—</div></div>
+      <div class="stat" style="--accent:var(--mine)"><div class="l">Drones Owned</div><div class="v" id="sDrones">—</div></div>
+      <div class="stat" style="--accent:var(--shield)"><div class="l">Resistances</div><div class="v" id="sResist">—</div></div>
+    </div>
+
+    <div class="section-label">Main Loadout</div>
+    <div class="loadout">
+      <div class="load-card">
+        <img id="hullImg" src="" alt="">
+        <div class="meta">
+          <div class="l">Most-played hull</div>
+          <div class="n" id="hullName">—</div>
+          <div class="s" id="hullSub">—</div>
+        </div>
+      </div>
+      <div class="load-card">
+        <img id="turretImg" src="" alt="">
+        <div class="meta">
+          <div class="l">Most-played turret</div>
+          <div class="n" id="turretName">—</div>
+          <div class="s" id="turretSub">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Top Paints</div>
+    <div class="gallery" id="paintGallery"></div>
+
+    <div class="section-label">Drones</div>
+    <div class="gallery" id="droneGallery"></div>
+
+    <div class="section-label">Resistance Modules</div>
+    <div class="resist-row" id="resistRow"></div>
+
+    <div class="section-label">Mode Time Split</div>
+    <div class="modes" id="modeSplit"></div>
+  </div>
+
+  <footer>
+    Data via the official Tanki Online ratings API · unofficial fan tool ·
+    <a href="https://tankionline.com" target="_blank" rel="noopener">tankionline.com</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  // ---- watermark ----
+  const wmRows = document.getElementById('wmRows');
+  for(let i=0;i<14;i++){
+    const row = document.createElement('div');
+    row.className = 'wm-row';
+    row.textContent = 'TANKIONLINE '.repeat(14);
+    wmRows.appendChild(row);
+  }
+
+  // ---- helpers ----
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => (n===undefined||n===null) ? '—' : Number(n).toLocaleString('en-US');
+
+  function toWebp(url){
+    if(!url) return '';
+    return url.replace(/image\.tnk(\?.*)?$/i, 'image.webp$1');
+  }
+  function toSvg(url){
+    if(!url) return '';
+    return url.replace(/image\.tnk(\?.*)?$/i, 'image.svg$1');
+  }
+
+  function bestByTime(list){
+    // dedupe by name, keep the entry with highest timePlayed
+    const map = new Map();
+    for(const item of list){
+      const prev = map.get(item.name);
+      if(!prev || item.timePlayed > prev.timePlayed) map.set(item.name, item);
+    }
+    return [...map.values()].sort((a,b)=>b.timePlayed-a.timePlayed);
+  }
+
+  function hoursLabel(ms){
+    const h = ms/3600000;
+    if(h < 1) return (ms/60000).toFixed(0)+'m';
+    return fmt(Math.round(h))+'h';
+  }
+
+  function setStatus(msg, isErr){
+    const el = $('status');
+    el.textContent = msg||'';
+    el.className = isErr ? 'err' : '';
+  }
+
+  async function loadProfile(user, region){
+    setStatus('Loading '+user+'…');
+    $('app').classList.remove('show');
+    const url = 'https://ratings.tankionline.com/api/'+encodeURIComponent(region)+'/profile/?user='+encodeURIComponent(user)+'&lang=en';
+    let data;
+    try{
+      const res = await fetch(url);
+      data = await res.json();
+    }catch(e){
+      setStatus('Network error — the ratings API may be blocking cross-origin requests from this page.', true);
+      return;
+    }
+    if(!data || data.responseType !== 'OK'){
+      setStatus('Profile not found for "'+user+'" on '+region.toUpperCase()+'.', true);
+      return;
+    }
+    render(data.response, region);
+    setStatus('');
+    $('app').classList.add('show');
+    history.replaceState(null,'','?user='+encodeURIComponent(user)+'&region='+region);
+  }
+
+  function render(r, region){
+    $('pName').textContent = r.name;
+    $('pRank').textContent = 'Rank '+r.rank;
+    $('pRegion').textContent = region.toUpperCase();
+    $('pPrem').style.display = r.hasPremium ? 'inline-block' : 'none';
+
+    const progress = (r.scoreNext > r.scoreBase)
+      ? Math.min(100, Math.max(0, (r.score - r.scoreBase) / (r.scoreNext - r.scoreBase) * 100))
+      : 0;
+    $('xpNow').textContent = fmt(r.score);
+    $('xpNext').textContent = 'next '+fmt(r.scoreNext);
+    $('xpFill').style.width = progress+'%';
+
+    const kd = r.deaths > 0 ? (r.kills/r.deaths).toFixed(2) : fmt(r.kills);
+    const ce = r.score > 0 ? (r.earnedCrystals/r.score).toFixed(2) : '—';
+    const eff = r.rating && r.rating.efficiency;
+
+    $('sKills').textContent = fmt(r.kills);
+    $('sDeaths').textContent = fmt(r.deaths);
+    $('sKD').textContent = kd;
+    $('sGear').textContent = fmt(r.gearScore);
+    $('sEff').innerHTML = (eff && eff.value>0 ? fmt(eff.value) : '—') + (eff && eff.position>0 ? ' <small>#'+eff.position+'</small>' : '');
+    $('sGolds').textContent = fmt(r.caughtGolds);
+    $('sCrystals').textContent = fmt(r.earnedCrystals);
+    $('sCE').textContent = ce;
+
+    const totalMs = (r.hullsPlayed||[]).reduce((s,h)=>s+(h.timePlayed||0),0);
+    $('sHours').innerHTML = fmt(Math.round(totalMs/3600000)) + ' <small>hrs</small>';
+
+    const totalSupplies = (r.suppliesUsage||[]).reduce((s,u)=>s+(u.usages||0),0);
+    $('sSupplies').textContent = fmt(totalSupplies);
+
+    $('sPaints').textContent = fmt((r.paintsPlayed||[]).length);
+    const totalGifts = (r.presents||[]).reduce((s,p)=>s+(p.count||0),0);
+    $('sGifts').textContent = fmt(totalGifts);
+
+    $('sHulls').textContent = fmt(new Set((r.hullsPlayed||[]).map(h=>h.name)).size);
+    $('sTurrets').textContent = fmt(new Set((r.turretsPlayed||[]).map(t=>t.name)).size);
+    $('sDrones').textContent = fmt((r.dronesPlayed||[]).length);
+    $('sResist').textContent = fmt((r.resistanceModules||[]).length);
+
+    // main loadout
+    const topHull = bestByTime(r.hullsPlayed||[])[0];
+    const topTurret = bestByTime(r.turretsPlayed||[])[0];
+    if(topHull){
+      $('hullImg').src = toWebp(topHull.imageUrl);
+      $('hullName').textContent = topHull.name+' · M'+Math.max(topHull.grade,0);
+      $('hullSub').textContent = hoursLabel(topHull.timePlayed)+' played · '+fmt(topHull.scoreEarned)+' XP';
+    }
+    if(topTurret){
+      $('turretImg').src = toWebp(topTurret.imageUrl);
+      $('turretName').textContent = topTurret.name+' · M'+Math.max(topTurret.grade,0);
+      $('turretSub').textContent = hoursLabel(topTurret.timePlayed)+' played · '+fmt(topTurret.scoreEarned)+' XP';
+    }
+
+    // paints gallery - top used by scoreEarned
+    const paints = [...(r.paintsPlayed||[])].sort((a,b)=>b.scoreEarned-a.scoreEarned).filter(p=>p.scoreEarned>0).slice(0,12);
+    $('paintGallery').innerHTML = paints.map(p =>
+      '<div class="gitem"><img src="'+toWebp(p.imageUrl)+'" alt="'+p.name+'" loading="lazy">' +
+      '<div class="n">'+p.name+'</div></div>'
+    ).join('') || '<div class="gitem">No usage data</div>';
+
+    // drones gallery
+    const drones = [...(r.dronesPlayed||[])].sort((a,b)=>b.timePlayed-a.timePlayed);
+    $('droneGallery').innerHTML = drones.map(d =>
+      '<div class="gitem"><img src="'+toWebp(d.imageUrl)+'" alt="'+d.name+'" loading="lazy">' +
+      '<div class="n">'+d.name+'</div><div class="g">'+hoursLabel(d.timePlayed)+'</div></div>'
+    ).join('') || '<div class="gitem">None</div>';
+
+    // resistance modules
+    $('resistRow').innerHTML = (r.resistanceModules||[]).map(m => {
+      const tag = (m.properties && m.properties[0]) ? m.properties[0].replace('_RESISTANCE','') : m.name;
+      return '<div class="resist"><img src="'+toSvg(m.imageUrl)+'" alt="'+m.name+'" loading="lazy">'+tag+'</div>';
+    }).join('');
+
+    // mode split
+    const modes = (r.modesPlayed||[]).filter(m=>m.timePlayed>0).sort((a,b)=>b.timePlayed-a.timePlayed);
+    const maxTime = modes.length ? modes[0].timePlayed : 1;
+    $('modeSplit').innerHTML = modes.map(m => {
+      const pct = (m.timePlayed/maxTime*100).toFixed(0);
+      const share = (m.timePlayed/totalMs*100).toFixed(0);
+      return '<div class="mode-row"><span class="m-name">'+m.name+'</span>' +
+        '<span class="m-bar-wrap"><span class="m-bar" style="width:'+pct+'%"></span></span>' +
+        '<span class="m-pct">'+share+'%</span></div>';
+    }).join('');
+  }
+
+  $('searchForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const user = $('userInput').value.trim();
+    const region = $('regionInput').value;
+    if(!user) return;
+    loadProfile(user, region);
+  });
+
+  // load from query string on first visit
+  const params = new URLSearchParams(location.search);
+  const qUser = params.get('user');
+  const qRegion = params.get('region') || 'eu';
+  if(qUser){
+    $('userInput').value = qUser;
+    $('regionInput').value = qRegion;
+    loadProfile(qUser, qRegion);
+  } else {
+    setStatus('Enter a nickname to look up their stats.');
+  }
+})();
+</script>
+</body>
+</html>
