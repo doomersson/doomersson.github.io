@@ -306,7 +306,8 @@
   async function loadProfile(user, region){
     setStatus('Loading '+user+'…');
     $('app').classList.remove('show');
-    const url = 'https://ratings.tankionline.com/api/'+encodeURIComponent(region)+'/profile/?user='+encodeURIComponent(user)+'&lang=en';
+    const targetUrl = 'https://ratings.tankionline.com/api/'+encodeURIComponent(region)+'/profile/?user='+encodeURIComponent(user)+'&lang=en&_='+Date.now();
+    const url = 'https://corsproxy.io/?'+encodeURIComponent(targetUrl);
     let data;
     try{
       const res = await fetch(url);
